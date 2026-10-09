@@ -1,0 +1,120 @@
+basePath: /
+definitions:
+  models.BalanceResponse:
+    properties:
+      balance:
+        type: number
+      message:
+        type: string
+      player_id:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.TransactionRequest:
+    properties:
+      amount:
+        type: number
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API server for player deposit and withdrawal operations.
+  title: Player Balance API
+  version: "1.0"
+paths:
+  /balance:
+    get:
+      description: Fetch current balance for a given user_id query parameter.
+      parameters:
+      - description: user_id
+        example: player123
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Player balance details
+          schema:
+            $ref: '#/definitions/models.BalanceResponse'
+        "400":
+          description: Missing player_id query parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get player balance
+      tags:
+      - balance
+  /deposit:
+    post:
+      consumes:
+      - application/json
+      description: Add a specified decimal amount to a player's balance.
+      parameters:
+      - description: Deposit Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deposit successfully processed
+          schema:
+            $ref: '#/definitions/models.BalanceResponse'
+        "400":
+          description: Invalid JSON body, missing player_id, or non-positive amount
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Deposit funds
+      tags:
+      - transactions
+  /withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Deduct a specified decimal amount from a users's balance if sufficient
+        balance is available.
+      parameters:
+      - description: Withdrawal Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Withdrawal successfully processed
+          schema:
+            $ref: '#/definitions/models.BalanceResponse'
+        "400":
+          description: Insufficient funds, missing player_id, or invalid amount
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Withdraw funds
+      tags:
+      - transactions
+swagger: "2.0"
