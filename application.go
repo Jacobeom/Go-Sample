@@ -6,6 +6,7 @@ import (
 	_ "main/docs"
 	"main/models"
 	"net/http"
+	"os"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -23,10 +24,13 @@ func main() {
 	http.HandleFunc("/withdraw", store.HandleWithdraw)
 	http.HandleFunc("/balance", store.HandleGetBalance)
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	port := ":5000"
-	fmt.Printf("Server starting on http://localhost%s\n", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
+	fmt.Printf("Server starting on http://localhost:%s\n", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
