@@ -19,7 +19,6 @@ import (
 
 func main() {
 	store := models.NewAccountStore()
-
 	http.HandleFunc("/deposit", store.HandleDeposit)
 	http.HandleFunc("/withdraw", store.HandleWithdraw)
 	http.HandleFunc("/balance", store.HandleGetBalance)
