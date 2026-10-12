@@ -2,9 +2,47 @@ package models
 
 import (
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
+
+func TestAccountStore_ConcurrentDeposits(t *testing.T) {
+	store := NewAccountStore()
+	userId := "player_concurrent"
+
+	const numGoroutines = 100
+	depositAmount := decimal.NewFromFloat(10.00)
+
+	// var wg sync.WaitGroup
+	// wg.Add(numGoroutines)
+
+	// Fire off 100 concurrent deposits of 10.00 each
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			// defer wg.Done()
+			_, err := store.Deposit(userId, depositAmount)
+			if err != nil {
+				t.Errorf("unexpected error during concurrent deposit: %v", err)
+			}
+		}()
+	}
+
+	// wg.Wait()
+
+	// Verify the final balance
+	time.Sleep(5 * time.Second)
+	res, err := store.Balance(userId)
+	if err != nil {
+		t.Fatalf("failed to get final balance: %v", err)
+	}
+
+	// Expected balance: 100 goroutines * 10.00 = 1000.00
+	expectedBalance := decimal.NewFromFloat(1000.00)
+	if !res.Balance.Equal(expectedBalance) {
+		t.Errorf("expected final balance %s, got %s", expectedBalance.String(), res.Balance.String())
+	}
+}
 
 func TestAccountStore_Deposit(t *testing.T) {
 	store := NewAccountStore()

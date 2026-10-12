@@ -183,14 +183,14 @@ func (s *AccountStore) Balance(userId string) (*BalanceResponse, error) {
 		return nil, errors.New("user is required")
 	}
 
-	s.mu.Lock()
+	s.mu.RLock()
 	currentBalance, exists := s.balances[userId]
 	if !exists {
-		s.mu.Unlock()
+		s.mu.RUnlock()
 		return nil, errors.New("Player not exist")
 	}
 
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	return &BalanceResponse{
 		UserId:  userId,
