@@ -4,20 +4,81 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"sync"
 
 	"github.com/shopspring/decimal"
 )
 
-// AccountStore manages thread-safe player balances in memory.
+// operationType defines the kind of action to perform on the store.
+type operationType int
+
+const (
+	opDeposit operationType = iota
+	opWithdraw
+	opBalance
+)
+
+// storeCommand represents a request sent to the background manager goroutine.
+type storeCommand struct {
+	op      operationType
+	userId  string
+	amount  decimal.Decimal
+	replyTo chan storeResponse
+}
+
+// storeResponse represents the reply sent back from the manager goroutine.
+type storeResponse struct {
+	balance decimal.Decimal
+	err     error
+}
+
+// AccountStore manages thread-safe player balances in memory via channels.
 type AccountStore struct {
-	mu       sync.RWMutex
-	balances map[string]decimal.Decimal
+	commandChan chan storeCommand
 }
 
 func NewAccountStore() *AccountStore {
-	return &AccountStore{
-		balances: make(map[string]decimal.Decimal),
+	store := &AccountStore{
+		commandChan: make(chan storeCommand),
+	}
+	// Start the background worker loop that owns the map exclusively
+	go store.run()
+	return store
+}
+
+// run is the single goroutine managing map access, preventing data races.
+func (s *AccountStore) run() {
+	balances := make(map[string]decimal.Decimal)
+
+	for cmd := range s.commandChan {
+		switch cmd.op {
+		case opDeposit:
+			current := balances[cmd.userId]
+			newBalance := current.Add(cmd.amount)
+			balances[cmd.userId] = newBalance
+			cmd.replyTo <- storeResponse{balance: newBalance}
+
+		case opWithdraw:
+			current, exists := balances[cmd.userId]
+			if !exists {
+				cmd.replyTo <- storeResponse{err: errors.New("Player not exist")}
+				continue
+			}
+			if current.LessThan(cmd.amount) {
+				cmd.replyTo <- storeResponse{err: errors.New("Not enough Balance to withdraw")}
+				continue
+			}
+			newBalance := current.Sub(cmd.amount)
+			balances[cmd.userId] = newBalance
+			cmd.replyTo <- storeResponse{balance: newBalance}
+
+		case opBalance:
+			current, exists := balances[cmd.userId]
+			if !exists {
+				cmd.replyTo <- storeResponse{err: errors.New("Player not exist")}
+				continue
+			}
+			cmd.replyTo <- storeResponse{balance: current}
+		}
 	}
 }
 
@@ -46,15 +107,23 @@ func (s *AccountStore) Deposit(userId string, amount decimal.Decimal) (*BalanceR
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return nil, errors.New("Amount neds to be > 0")
 	}
-	s.mu.Lock()
-	currentBalance := s.balances[userId]
-	newBalance := currentBalance.Add(amount)
-	s.balances[userId] = newBalance
-	s.mu.Unlock()
+
+	replyChan := make(chan storeResponse)
+	s.commandChan <- storeCommand{
+		op:      opDeposit,
+		userId:  userId,
+		amount:  amount,
+		replyTo: replyChan,
+	}
+
+	res := <-replyChan
+	if res.err != nil {
+		return nil, res.err
+	}
 
 	return &BalanceResponse{
 		UserId:  userId,
-		Balance: newBalance,
+		Balance: res.balance,
 		Message: "Deposit successful",
 	}, nil
 }
@@ -98,24 +167,22 @@ func (s *AccountStore) Withdraw(userId string, amount decimal.Decimal) (*Balance
 		return nil, errors.New("Amount neds to be > 0")
 	}
 
-	s.mu.Lock()
-	currentBalance, exists := s.balances[userId]
-	if !exists {
-		s.mu.Unlock()
-		return nil, errors.New("Player not exist")
+	replyChan := make(chan storeResponse)
+	s.commandChan <- storeCommand{
+		op:      opWithdraw,
+		userId:  userId,
+		amount:  amount,
+		replyTo: replyChan,
 	}
-	if currentBalance.LessThan(amount) {
-		s.mu.Unlock()
-		return nil, errors.New("Not enough Balance to withdraw")
-	}
-	newBalance := currentBalance.Sub(amount)
-	s.balances[userId] = newBalance
 
-	s.mu.Unlock()
+	res := <-replyChan
+	if res.err != nil {
+		return nil, res.err
+	}
 
 	return &BalanceResponse{
 		UserId:  userId,
-		Balance: newBalance,
+		Balance: res.balance,
 		Message: "Withdraw successful",
 	}, nil
 }
@@ -147,6 +214,7 @@ func (s *AccountStore) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
 
 	if errorWithdraw != nil {
 		respondWithError(w, http.StatusBadRequest, errorWithdraw.Error())
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, res)
@@ -173,6 +241,7 @@ func (s *AccountStore) HandleGetBalance(w http.ResponseWriter, r *http.Request) 
 
 	if errorWithdraw != nil {
 		respondWithError(w, http.StatusBadRequest, errorWithdraw.Error())
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, res)
@@ -183,18 +252,21 @@ func (s *AccountStore) Balance(userId string) (*BalanceResponse, error) {
 		return nil, errors.New("user is required")
 	}
 
-	s.mu.RLock()
-	currentBalance, exists := s.balances[userId]
-	if !exists {
-		s.mu.RUnlock()
-		return nil, errors.New("Player not exist")
+	replyChan := make(chan storeResponse)
+	s.commandChan <- storeCommand{
+		op:      opBalance,
+		userId:  userId,
+		replyTo: replyChan,
 	}
 
-	s.mu.RUnlock()
+	res := <-replyChan
+	if res.err != nil {
+		return nil, res.err
+	}
 
 	return &BalanceResponse{
 		UserId:  userId,
-		Balance: currentBalance,
+		Balance: res.balance,
 	}, nil
 }
 
