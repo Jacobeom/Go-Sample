@@ -8,20 +8,23 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// operationType defines the kind of action to perform on the store.
-type operationType int
-
-const (
-	opDeposit operationType = iota
-	opWithdraw
-	opBalance
-)
-
-// storeCommand represents a request sent to the background manager goroutine.
-type storeCommand struct {
-	op      operationType
+// depositCommand represents a deposit request sent to the background goroutine.
+type depositCommand struct {
 	userId  string
 	amount  decimal.Decimal
+	replyTo chan storeResponse
+}
+
+// withdrawCommand represents a withdraw request sent to the background goroutine.
+type withdrawCommand struct {
+	userId  string
+	amount  decimal.Decimal
+	replyTo chan storeResponse
+}
+
+// balanceCommand represents a balance check request sent to the background goroutine.
+type balanceCommand struct {
+	userId  string
 	replyTo chan storeResponse
 }
 
@@ -31,33 +34,37 @@ type storeResponse struct {
 	err     error
 }
 
-// AccountStore manages thread-safe player balances in memory via channels.
+// AccountStore manages thread-safe player balances in memory via multiple channels.
 type AccountStore struct {
-	commandChan chan storeCommand
+	depositChan  chan depositCommand
+	withdrawChan chan withdrawCommand
+	balanceChan  chan balanceCommand
 }
 
 func NewAccountStore() *AccountStore {
 	store := &AccountStore{
-		commandChan: make(chan storeCommand),
+		depositChan:  make(chan depositCommand),
+		withdrawChan: make(chan withdrawCommand),
+		balanceChan:  make(chan balanceCommand),
 	}
 	// Start the background worker loop that owns the map exclusively
 	go store.run()
 	return store
 }
 
-// run is the single goroutine managing map access, preventing data races.
+// run is the single goroutine managing map access using a select statement across channels.
 func (s *AccountStore) run() {
 	balances := make(map[string]decimal.Decimal)
 
-	for cmd := range s.commandChan {
-		switch cmd.op {
-		case opDeposit:
+	for {
+		select {
+		case cmd := <-s.depositChan:
 			current := balances[cmd.userId]
 			newBalance := current.Add(cmd.amount)
 			balances[cmd.userId] = newBalance
 			cmd.replyTo <- storeResponse{balance: newBalance}
 
-		case opWithdraw:
+		case cmd := <-s.withdrawChan:
 			current, exists := balances[cmd.userId]
 			if !exists {
 				cmd.replyTo <- storeResponse{err: errors.New("Player not exist")}
@@ -71,7 +78,7 @@ func (s *AccountStore) run() {
 			balances[cmd.userId] = newBalance
 			cmd.replyTo <- storeResponse{balance: newBalance}
 
-		case opBalance:
+		case cmd := <-s.balanceChan:
 			current, exists := balances[cmd.userId]
 			if !exists {
 				cmd.replyTo <- storeResponse{err: errors.New("Player not exist")}
@@ -109,8 +116,7 @@ func (s *AccountStore) Deposit(userId string, amount decimal.Decimal) (*BalanceR
 	}
 
 	replyChan := make(chan storeResponse)
-	s.commandChan <- storeCommand{
-		op:      opDeposit,
+	s.depositChan <- depositCommand{
 		userId:  userId,
 		amount:  amount,
 		replyTo: replyChan,
@@ -168,8 +174,7 @@ func (s *AccountStore) Withdraw(userId string, amount decimal.Decimal) (*Balance
 	}
 
 	replyChan := make(chan storeResponse)
-	s.commandChan <- storeCommand{
-		op:      opWithdraw,
+	s.withdrawChan <- withdrawCommand{
 		userId:  userId,
 		amount:  amount,
 		replyTo: replyChan,
@@ -253,8 +258,7 @@ func (s *AccountStore) Balance(userId string) (*BalanceResponse, error) {
 	}
 
 	replyChan := make(chan storeResponse)
-	s.commandChan <- storeCommand{
-		op:      opBalance,
+	s.balanceChan <- balanceCommand{
 		userId:  userId,
 		replyTo: replyChan,
 	}
