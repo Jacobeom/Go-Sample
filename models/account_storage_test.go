@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccountStore_ConcurrentDeposits(t *testing.T) {
-	store := NewAccountStore()
+	store := NewChannelAccountStore()
 	userId := "player_concurrent"
 
 	const numGoroutines = 100
@@ -45,7 +45,7 @@ func TestAccountStore_ConcurrentDeposits(t *testing.T) {
 }
 
 func TestAccountStore_Deposit(t *testing.T) {
-	store := NewAccountStore()
+	store := NewChannelAccountStore()
 
 	t.Run("successful deposit", func(t *testing.T) {
 		res, err := store.Deposit("player1", decimal.NewFromFloat(100.50))
@@ -90,7 +90,7 @@ func TestAccountStore_Deposit(t *testing.T) {
 }
 
 func TestAccountStore_Withdraw(t *testing.T) {
-	store := NewAccountStore()
+	store := NewChannelAccountStore()
 	store.Deposit("player1", decimal.NewFromFloat(200.00))
 
 	t.Run("successful withdrawal", func(t *testing.T) {
@@ -128,7 +128,7 @@ func TestAccountStore_Withdraw(t *testing.T) {
 }
 
 func TestAccountStore_Balance(t *testing.T) {
-	store := NewAccountStore()
+	store := NewChannelAccountStore()
 	store.Deposit("player1", decimal.NewFromFloat(300.25))
 
 	t.Run("retrieve existing balance", func(t *testing.T) {

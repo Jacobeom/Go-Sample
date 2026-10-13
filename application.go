@@ -18,10 +18,12 @@ import (
 // @BasePath        /
 
 func main() {
-	store := models.NewAccountStore()
-	http.HandleFunc("/deposit", store.HandleDeposit)
-	http.HandleFunc("/withdraw", store.HandleWithdraw)
-	http.HandleFunc("/balance", store.HandleGetBalance)
+	var store models.AccountStore = models.NewChannelAccountStore()
+
+	server := models.NewServer(store)
+	http.HandleFunc("/deposit", server.HandleDeposit)
+	http.HandleFunc("/withdraw", server.HandleWithdraw)
+	http.HandleFunc("/balance", server.HandleGetBalance)
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 	port := os.Getenv("PORT")
 	if port == "" {
