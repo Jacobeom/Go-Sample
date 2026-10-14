@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	_ "main/docs"
 	"main/models"
 	"net/http"
 	"os"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -18,7 +22,19 @@ import (
 // @BasePath        /
 
 func main() {
-	var store models.AccountStore = models.NewChannelAccountStore()
+	ctx := context.TODO()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-north-1"))
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+
+	dynamoClient := dynamodb.NewFromConfig(cfg)
+	tableName := os.Getenv("DYNAMODB_TABLE_NAME")
+	if tableName == "" {
+		tableName = "UserWallet" // fallback default table name
+	}
+	var store models.AccountStore = models.NewDynamoAccountStore(dynamoClient, tableName)
 
 	server := models.NewServer(store)
 	http.HandleFunc("/deposit", server.HandleDeposit)
