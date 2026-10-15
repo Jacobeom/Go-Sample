@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	_ "main/docs"
-	"main/models"
+	"main/internal"
 	"net/http"
 	"os"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -18,10 +22,24 @@ import (
 // @BasePath        /
 
 func main() {
-	store := models.NewAccountStore()
-	http.HandleFunc("/deposit", store.HandleDeposit)
-	http.HandleFunc("/withdraw", store.HandleWithdraw)
-	http.HandleFunc("/balance", store.HandleGetBalance)
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-north-1"))
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+
+	dynamoClient := dynamodb.NewFromConfig(cfg)
+	tableName := os.Getenv("DYNAMODB_TABLE_NAME")
+	if tableName == "" {
+		tableName = "UserWallet" // fallback default table name
+	}
+	var store internal.AccountStore = internal.NewDynamoAccountStore(dynamoClient, tableName)
+
+	server := internal.NewServer(store)
+	http.HandleFunc("/deposit", server.HandleDeposit)
+	http.HandleFunc("/withdraw", server.HandleWithdraw)
+	http.HandleFunc("/balance", server.HandleGetBalance)
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 	port := os.Getenv("PORT")
 	if port == "" {

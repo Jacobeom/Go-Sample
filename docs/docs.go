@@ -39,19 +39,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Player balance details",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Missing player_id query parameter",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     }
                 }
@@ -77,7 +77,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TransactionRequest"
+                            "$ref": "#/definitions/internal.TransactionRequest"
                         }
                     }
                 ],
@@ -85,19 +85,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Deposit successfully processed",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid JSON body, missing player_id, or non-positive amount",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     }
                 }
@@ -123,7 +123,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TransactionRequest"
+                            "$ref": "#/definitions/internal.TransactionRequest"
                         }
                     }
                 ],
@@ -131,19 +131,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Withdrawal successfully processed",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Insufficient funds, missing player_id, or invalid amount",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     }
                 }
@@ -151,7 +151,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.BalanceResponse": {
+        "internal.BalanceResponse": {
             "type": "object",
             "properties": {
                 "balance": {
@@ -165,7 +165,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErrorResponse": {
+        "internal.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -173,7 +173,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.TransactionRequest": {
+        "internal.TransactionRequest": {
             "type": "object",
             "properties": {
                 "amount": {

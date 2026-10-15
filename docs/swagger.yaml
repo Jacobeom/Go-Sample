@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  models.BalanceResponse:
+  internal.BalanceResponse:
     properties:
       balance:
         type: number
@@ -9,12 +9,12 @@ definitions:
       player_id:
         type: string
     type: object
-  models.ErrorResponse:
+  internal.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  models.TransactionRequest:
+  internal.TransactionRequest:
     properties:
       amount:
         type: number
@@ -44,15 +44,15 @@ paths:
         "200":
           description: Player balance details
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Missing player_id query parameter
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
       summary: Get player balance
       tags:
       - balance
@@ -67,22 +67,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.TransactionRequest'
+          $ref: '#/definitions/internal.TransactionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Deposit successfully processed
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Invalid JSON body, missing player_id, or non-positive amount
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
       summary: Deposit funds
       tags:
       - transactions
@@ -98,22 +98,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.TransactionRequest'
+          $ref: '#/definitions/internal.TransactionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Withdrawal successfully processed
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Insufficient funds, missing player_id, or invalid amount
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
       summary: Withdraw funds
       tags:
       - transactions
