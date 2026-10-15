@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	_ "main/docs"
-	"main/models"
+	"main/internal"
 	"net/http"
 	"os"
 
@@ -34,9 +34,9 @@ func main() {
 	if tableName == "" {
 		tableName = "UserWallet" // fallback default table name
 	}
-	var store models.AccountStore = models.NewDynamoAccountStore(dynamoClient, tableName)
+	var store internal.AccountStore = internal.NewDynamoAccountStore(dynamoClient, tableName)
 
-	server := models.NewServer(store)
+	server := internal.NewServer(store)
 	http.HandleFunc("/deposit", server.HandleDeposit)
 	http.HandleFunc("/withdraw", server.HandleWithdraw)
 	http.HandleFunc("/balance", server.HandleGetBalance)
