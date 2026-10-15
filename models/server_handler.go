@@ -40,7 +40,7 @@ func (s *Server) HandleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := s.store.Deposit(req.UserId, req.Amount)
+	res, err := s.store.Deposit(r.Context(), req.UserId, req.Amount)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -72,7 +72,7 @@ func (s *Server) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := s.store.Withdraw(req.UserId, req.Amount)
+	res, err := s.store.Withdraw(r.Context(), req.UserId, req.Amount)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -98,7 +98,7 @@ func (s *Server) HandleGetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId := r.URL.Query().Get("user_id")
-	res, err := s.store.Balance(userId)
+	res, err := s.store.Balance(r.Context(), userId)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return

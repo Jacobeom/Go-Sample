@@ -1,6 +1,8 @@
 package models
 
 import (
+	"context"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -9,9 +11,9 @@ import (
 // ==========================================
 
 type AccountStore interface {
-	Deposit(userId string, amount decimal.Decimal) (*BalanceResponse, error)
-	Withdraw(userId string, amount decimal.Decimal) (*BalanceResponse, error)
-	Balance(userId string) (*BalanceResponse, error)
+	Deposit(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error)
+	Withdraw(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error)
+	Balance(ctx context.Context, userId string) (*BalanceResponse, error)
 }
 
 // ==========================================

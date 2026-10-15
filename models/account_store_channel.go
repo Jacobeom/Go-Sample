@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 
 	"github.com/shopspring/decimal"
@@ -84,7 +85,7 @@ func (s *ChannelAccountStore) run() {
 	}
 }
 
-func (s *ChannelAccountStore) Deposit(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *ChannelAccountStore) Deposit(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
@@ -93,17 +94,27 @@ func (s *ChannelAccountStore) Deposit(userId string, amount decimal.Decimal) (*B
 	}
 
 	replyChan := make(chan storeResponse)
-	s.depositChan <- depositCommand{userId: userId, amount: amount, replyTo: replyChan}
+	cmd := depositCommand{userId: userId, amount: amount, replyTo: replyChan}
 
-	res := <-replyChan
-	if res.err != nil {
-		return nil, res.err
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case s.depositChan <- cmd:
 	}
 
-	return &BalanceResponse{UserId: userId, Balance: res.balance, Message: "Deposit successful"}, nil
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-replyChan:
+		if res.err != nil {
+			return nil, res.err
+		}
+		return &BalanceResponse{UserId: userId, Balance: res.balance, Message: "Deposit successful"}, nil
+	}
+
 }
 
-func (s *ChannelAccountStore) Withdraw(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *ChannelAccountStore) Withdraw(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
@@ -112,28 +123,46 @@ func (s *ChannelAccountStore) Withdraw(userId string, amount decimal.Decimal) (*
 	}
 
 	replyChan := make(chan storeResponse)
-	s.withdrawChan <- withdrawCommand{userId: userId, amount: amount, replyTo: replyChan}
+	cmd := withdrawCommand{userId: userId, amount: amount, replyTo: replyChan}
 
-	res := <-replyChan
-	if res.err != nil {
-		return nil, res.err
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case s.withdrawChan <- cmd:
 	}
 
-	return &BalanceResponse{UserId: userId, Balance: res.balance, Message: "Withdraw successful"}, nil
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-replyChan:
+		if res.err != nil {
+			return nil, res.err
+		}
+		return &BalanceResponse{UserId: userId, Balance: res.balance, Message: "Withdraw successful"}, nil
+	}
 }
 
-func (s *ChannelAccountStore) Balance(userId string) (*BalanceResponse, error) {
+func (s *ChannelAccountStore) Balance(ctx context.Context, userId string) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
 
 	replyChan := make(chan storeResponse)
-	s.balanceChan <- balanceCommand{userId: userId, replyTo: replyChan}
+	cmd := balanceCommand{userId: userId, replyTo: replyChan}
 
-	res := <-replyChan
-	if res.err != nil {
-		return nil, res.err
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case s.balanceChan <- cmd:
 	}
 
-	return &BalanceResponse{UserId: userId, Balance: res.balance}, nil
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-replyChan:
+		if res.err != nil {
+			return nil, res.err
+		}
+		return &BalanceResponse{UserId: userId, Balance: res.balance}, nil
+	}
 }

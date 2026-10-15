@@ -22,7 +22,7 @@ import (
 // @BasePath        /
 
 func main() {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-north-1"))
 	if err != nil {

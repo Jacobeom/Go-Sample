@@ -34,9 +34,8 @@ type UserWalletDB struct {
 }
 
 // Balance retrieves the user's current balance from DynamoDB.
-func (s *DynamoAccountStore) Balance(userId string) (*BalanceResponse, error) {
+func (s *DynamoAccountStore) Balance(ctx context.Context, userId string) (*BalanceResponse, error) {
 
-	ctx := context.TODO()
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(s.tableName),
 		KeyConditionExpression: aws.String("UserId = :uid"),
@@ -64,11 +63,10 @@ func (s *DynamoAccountStore) Balance(userId string) (*BalanceResponse, error) {
 	return &BalanceResponse{UserId: userId, Balance: decimal.NewFromFloat(wallet.Balance), Message: "Balance successful"}, nil
 }
 
-func (s *DynamoAccountStore) Deposit(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *DynamoAccountStore) Deposit(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return nil, fmt.Errorf("deposit amount must be greater than zero")
 	}
-	ctx := context.TODO()
 
 	input := &dynamodb.UpdateItemInput{
 		TableName: aws.String(s.tableName),
@@ -86,6 +84,7 @@ func (s *DynamoAccountStore) Deposit(userId string, amount decimal.Decimal) (*Ba
 
 	output, err := s.client.UpdateItem(ctx, input)
 	if err != nil {
+		errors.Is(error)
 		return nil, fmt.Errorf("failed to execute atomic deposit: %w", err)
 	}
 
@@ -104,11 +103,10 @@ func (s *DynamoAccountStore) Deposit(userId string, amount decimal.Decimal) (*Ba
 }
 
 // Withdraw subtracts an amount from the user's balance with insufficient funds validation.
-func (s *DynamoAccountStore) Withdraw(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *DynamoAccountStore) Withdraw(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return nil, fmt.Errorf("withdrawal amount must be greater than zero")
 	}
-	ctx := context.TODO()
 
 	// DynamoDB atomic update with a condition ensuring the balance won't drop below zero
 	input := &dynamodb.UpdateItemInput{

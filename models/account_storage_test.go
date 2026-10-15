@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 func TestAccountStore_ConcurrentDeposits(t *testing.T) {
 	store := NewChannelAccountStore()
 	userId := "player_concurrent"
-
+	ctx := context.TODO()
 	const numGoroutines = 100
 	depositAmount := decimal.NewFromFloat(10.00)
 
@@ -21,7 +22,7 @@ func TestAccountStore_ConcurrentDeposits(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			// defer wg.Done()
-			_, err := store.Deposit(userId, depositAmount)
+			_, err := store.Deposit(ctx, userId, depositAmount)
 			if err != nil {
 				t.Errorf("unexpected error during concurrent deposit: %v", err)
 			}
@@ -32,7 +33,7 @@ func TestAccountStore_ConcurrentDeposits(t *testing.T) {
 
 	// Verify the final balance
 	time.Sleep(5 * time.Second)
-	res, err := store.Balance(userId)
+	res, err := store.Balance(ctx, userId)
 	if err != nil {
 		t.Fatalf("failed to get final balance: %v", err)
 	}
@@ -46,9 +47,10 @@ func TestAccountStore_ConcurrentDeposits(t *testing.T) {
 
 func TestAccountStore_Deposit(t *testing.T) {
 	store := NewChannelAccountStore()
+	ctx := context.TODO()
 
 	t.Run("successful deposit", func(t *testing.T) {
-		res, err := store.Deposit("player1", decimal.NewFromFloat(100.50))
+		res, err := store.Deposit(ctx, "player1", decimal.NewFromFloat(100.50))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -59,7 +61,7 @@ func TestAccountStore_Deposit(t *testing.T) {
 	})
 
 	t.Run("subsequent deposit adds to balance", func(t *testing.T) {
-		res, err := store.Deposit("player1", decimal.NewFromFloat(50.00))
+		res, err := store.Deposit(ctx, "player1", decimal.NewFromFloat(50.00))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -70,19 +72,19 @@ func TestAccountStore_Deposit(t *testing.T) {
 	})
 
 	t.Run("empty user id error", func(t *testing.T) {
-		_, err := store.Deposit("", decimal.NewFromFloat(10.00))
+		_, err := store.Deposit(ctx, "", decimal.NewFromFloat(10.00))
 		if err == nil {
 			t.Error("expected error for empty user id, got nil")
 		}
 	})
 
 	t.Run("non-positive amount error", func(t *testing.T) {
-		_, err := store.Deposit("player1", decimal.Zero)
+		_, err := store.Deposit(ctx, "player1", decimal.Zero)
 		if err == nil {
 			t.Error("expected error for zero amount, got nil")
 		}
 
-		_, err = store.Deposit("player1", decimal.NewFromFloat(-10.00))
+		_, err = store.Deposit(ctx, "player1", decimal.NewFromFloat(-10.00))
 		if err == nil {
 			t.Error("expected error for negative amount, got nil")
 		}
@@ -90,11 +92,12 @@ func TestAccountStore_Deposit(t *testing.T) {
 }
 
 func TestAccountStore_Withdraw(t *testing.T) {
+	ctx := context.TODO()
 	store := NewChannelAccountStore()
-	store.Deposit("player1", decimal.NewFromFloat(200.00))
+	store.Deposit(ctx, "player1", decimal.NewFromFloat(200.00))
 
 	t.Run("successful withdrawal", func(t *testing.T) {
-		res, err := store.Withdraw("player1", decimal.NewFromFloat(50.00))
+		res, err := store.Withdraw(ctx, "player1", decimal.NewFromFloat(50.00))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -106,21 +109,21 @@ func TestAccountStore_Withdraw(t *testing.T) {
 	})
 
 	t.Run("insufficient funds error", func(t *testing.T) {
-		_, err := store.Withdraw("player1", decimal.NewFromFloat(500.00))
+		_, err := store.Withdraw(ctx, "player1", decimal.NewFromFloat(500.00))
 		if err == nil {
 			t.Error("expected error for insufficient funds, got nil")
 		}
 	})
 
 	t.Run("non-existent player error", func(t *testing.T) {
-		_, err := store.Withdraw("nonexistent", decimal.NewFromFloat(10.00))
+		_, err := store.Withdraw(ctx, "nonexistent", decimal.NewFromFloat(10.00))
 		if err == nil {
 			t.Error("expected error for non-existent player, got nil")
 		}
 	})
 
 	t.Run("invalid withdrawal amount error", func(t *testing.T) {
-		_, err := store.Withdraw("player1", decimal.NewFromFloat(-5.00))
+		_, err := store.Withdraw(ctx, "player1", decimal.NewFromFloat(-5.00))
 		if err == nil {
 			t.Error("expected error for negative withdrawal amount, got nil")
 		}
@@ -128,11 +131,13 @@ func TestAccountStore_Withdraw(t *testing.T) {
 }
 
 func TestAccountStore_Balance(t *testing.T) {
+	ctx := context.TODO()
+
 	store := NewChannelAccountStore()
-	store.Deposit("player1", decimal.NewFromFloat(300.25))
+	store.Deposit(ctx, "player1", decimal.NewFromFloat(300.25))
 
 	t.Run("retrieve existing balance", func(t *testing.T) {
-		res, err := store.Balance("player1")
+		res, err := store.Balance(ctx, "player1")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -144,14 +149,14 @@ func TestAccountStore_Balance(t *testing.T) {
 	})
 
 	t.Run("retrieve non-existent balance error", func(t *testing.T) {
-		_, err := store.Balance("unknown_user")
+		_, err := store.Balance(ctx, "unknown_user")
 		if err == nil {
 			t.Error("expected error for unknown user balance check, got nil")
 		}
 	})
 
 	t.Run("empty user id error", func(t *testing.T) {
-		_, err := store.Balance("")
+		_, err := store.Balance(ctx, "")
 		if err == nil {
 			t.Error("expected error for empty user id, got nil")
 		}

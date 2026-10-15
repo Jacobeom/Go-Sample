@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -22,7 +23,7 @@ func NewMutexAccountStore() *MutexAccountStore {
 	}
 }
 
-func (s *MutexAccountStore) Deposit(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *MutexAccountStore) Deposit(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
@@ -40,7 +41,7 @@ func (s *MutexAccountStore) Deposit(userId string, amount decimal.Decimal) (*Bal
 	return &BalanceResponse{UserId: userId, Balance: newBalance, Message: "Deposit successful"}, nil
 }
 
-func (s *MutexAccountStore) Withdraw(userId string, amount decimal.Decimal) (*BalanceResponse, error) {
+func (s *MutexAccountStore) Withdraw(ctx context.Context, userId string, amount decimal.Decimal) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
@@ -65,7 +66,7 @@ func (s *MutexAccountStore) Withdraw(userId string, amount decimal.Decimal) (*Ba
 	return &BalanceResponse{UserId: userId, Balance: newBalance, Message: "Withdraw successful"}, nil
 }
 
-func (s *MutexAccountStore) Balance(userId string) (*BalanceResponse, error) {
+func (s *MutexAccountStore) Balance(ctx context.Context, userId string) (*BalanceResponse, error) {
 	if userId == "" {
 		return nil, errors.New("user is required")
 	}
