@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"main/auth"
 	"net/http"
 )
 
@@ -11,6 +12,7 @@ import (
 
 type Server struct {
 	store AccountStore
+	//TODO: Add configuration
 }
 
 func NewServer(store AccountStore) *Server {
@@ -39,8 +41,13 @@ func (s *Server) HandleDeposit(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-
-	res, err := s.store.Deposit(r.Context(), req.UserId, req.Amount)
+	claims, ok := r.Context().Value("claims").(*auth.Claims)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userId := claims.Username
+	res, err := s.store.Deposit(r.Context(), userId, req.Amount)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -65,6 +72,12 @@ func (s *Server) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusMethodNotAllowed, "Only POST method is allowed")
 		return
 	}
+	claims, ok := r.Context().Value("claims").(*auth.Claims)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userId := claims.Username
 
 	var req TransactionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -72,7 +85,7 @@ func (s *Server) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := s.store.Withdraw(r.Context(), req.UserId, req.Amount)
+	res, err := s.store.Withdraw(r.Context(), userId, req.Amount)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -96,8 +109,12 @@ func (s *Server) HandleGetBalance(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusMethodNotAllowed, "Only GET method is allowed")
 		return
 	}
-
-	userId := r.URL.Query().Get("user_id")
+	claims, ok := r.Context().Value("claims").(*auth.Claims)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userId := claims.Username
 	res, err := s.store.Balance(r.Context(), userId)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())

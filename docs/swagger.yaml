@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  auth.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   internal.BalanceResponse:
     properties:
       balance:
@@ -42,7 +49,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Player balance details
+          description: User balance details
           schema:
             $ref: '#/definitions/internal.BalanceResponse'
         "400":
@@ -53,7 +60,7 @@ paths:
           description: Method not allowed
           schema:
             $ref: '#/definitions/internal.ErrorResponse'
-      summary: Get player balance
+      summary: Get user balance
       tags:
       - balance
   /deposit:
@@ -86,11 +93,112 @@ paths:
       summary: Deposit funds
       tags:
       - transactions
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Verifies credentials against DynamoDB, generates a JWT, and returns
+        it via an HTTP-only cookie.
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Login successful'
+          headers:
+            Set-Cookie:
+              description: auth_token=JWT_TOKEN; Path=/; HttpOnly; SameSite=Strict
+              type: string
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "401":
+          description: Invalid username or password
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Log in a user
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Clears the HTTP-only auth_token cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Logged out successfully'
+          headers:
+            Set-Cookie:
+              description: auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00
+                GMT; HttpOnly; SameSite=Strict
+              type: string
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Log out a user
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user with a hashed password stored in DynamoDB.
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: User registered successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body / Username and password are required
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "409":
+          description: Could not register user (username may already exist)
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - auth
   /withdraw:
     post:
       consumes:
       - application/json
-      description: Deduct a specified decimal amount from a users's balance if sufficient
+      description: Deduct a specified decimal amount from a user's balance if sufficient
         balance is available.
       parameters:
       - description: Withdrawal Request Payload

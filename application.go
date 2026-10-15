@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"main/auth"
 	_ "main/docs"
 	"main/internal"
 	"net/http"
@@ -37,10 +38,15 @@ func main() {
 	var store internal.AccountStore = internal.NewDynamoAccountStore(dynamoClient, tableName)
 
 	server := internal.NewServer(store)
-	http.HandleFunc("/deposit", server.HandleDeposit)
-	http.HandleFunc("/withdraw", server.HandleWithdraw)
-	http.HandleFunc("/balance", server.HandleGetBalance)
-	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	authService := auth.NewAuthService(dynamoClient, "Login")
+
+	http.HandleFunc("/register", authService.RegisterLogin)
+	http.HandleFunc("/login", authService.Login)
+	http.HandleFunc("/logout", auth.AuthMiddleware(authService.Logout))
+	http.HandleFunc("/deposit", auth.AuthMiddleware(server.HandleDeposit))
+	http.HandleFunc("/withdraw", auth.AuthMiddleware(server.HandleWithdraw))
+	http.HandleFunc("/balance", auth.AuthMiddleware(server.HandleGetBalance))
+	http.HandleFunc("/swagger/", auth.AuthMiddleware(httpSwagger.WrapHandler))
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
