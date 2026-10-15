@@ -1,4 +1,4 @@
-package models
+package internal
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// DynamoAccountStore implements models.AccountStore using AWS DynamoDB.
+// DynamoAccountStore implements AccountStore using AWS DynamoDB.
 type DynamoAccountStore struct {
 	client    *dynamodb.Client
 	tableName string
