@@ -1,6 +1,13 @@
 basePath: /
 definitions:
-  models.BalanceResponse:
+  auth.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal.BalanceResponse:
     properties:
       balance:
         type: number
@@ -9,12 +16,12 @@ definitions:
       player_id:
         type: string
     type: object
-  models.ErrorResponse:
+  internal.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  models.TransactionRequest:
+  internal.TransactionRequest:
     properties:
       amount:
         type: number
@@ -42,18 +49,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: Player balance details
+          description: User balance details
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Missing player_id query parameter
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Get player balance
+            $ref: '#/definitions/internal.ErrorResponse'
+      summary: Get user balance
       tags:
       - balance
   /deposit:
@@ -67,30 +74,131 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.TransactionRequest'
+          $ref: '#/definitions/internal.TransactionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Deposit successfully processed
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Invalid JSON body, missing player_id, or non-positive amount
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
       summary: Deposit funds
       tags:
       - transactions
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Verifies credentials against DynamoDB, generates a JWT, and returns
+        it via an HTTP-only cookie.
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Login successful'
+          headers:
+            Set-Cookie:
+              description: auth_token=JWT_TOKEN; Path=/; HttpOnly; SameSite=Strict
+              type: string
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "401":
+          description: Invalid username or password
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Log in a user
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Clears the HTTP-only auth_token cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Logged out successfully'
+          headers:
+            Set-Cookie:
+              description: auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00
+                GMT; HttpOnly; SameSite=Strict
+              type: string
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Log out a user
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user with a hashed password stored in DynamoDB.
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: User registered successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body / Username and password are required
+          schema:
+            type: string
+        "405":
+          description: Method not allowed
+          schema:
+            type: string
+        "409":
+          description: Could not register user (username may already exist)
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - auth
   /withdraw:
     post:
       consumes:
       - application/json
-      description: Deduct a specified decimal amount from a users's balance if sufficient
+      description: Deduct a specified decimal amount from a user's balance if sufficient
         balance is available.
       parameters:
       - description: Withdrawal Request Payload
@@ -98,22 +206,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.TransactionRequest'
+          $ref: '#/definitions/internal.TransactionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Withdrawal successfully processed
           schema:
-            $ref: '#/definitions/models.BalanceResponse'
+            $ref: '#/definitions/internal.BalanceResponse'
         "400":
           description: Insufficient funds, missing player_id, or invalid amount
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
         "405":
           description: Method not allowed
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/internal.ErrorResponse'
       summary: Withdraw funds
       tags:
       - transactions

@@ -24,7 +24,7 @@ const docTemplate = `{
                 "tags": [
                     "balance"
                 ],
-                "summary": "Get player balance",
+                "summary": "Get user balance",
                 "parameters": [
                     {
                         "type": "string",
@@ -37,21 +37,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Player balance details",
+                        "description": "User balance details",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Missing player_id query parameter",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     }
                 }
@@ -77,7 +77,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TransactionRequest"
+                            "$ref": "#/definitions/internal.TransactionRequest"
                         }
                     }
                 ],
@@ -85,19 +85,170 @@ const docTemplate = `{
                     "200": {
                         "description": "Deposit successfully processed",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid JSON body, missing player_id, or non-positive amount",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "Verifies credentials against DynamoDB, generates a JWT, and returns it via an HTTP-only cookie.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Log in a user",
+                "parameters": [
+                    {
+                        "description": "User credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Login successful",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "auth_token=JWT_TOKEN; Path=/; HttpOnly; SameSite=Strict"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid username or password",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "description": "Clears the HTTP-only auth_token cookie.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Log out a user",
+                "responses": {
+                    "200": {
+                        "description": "message: Logged out successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Creates a new user with a hashed password stored in DynamoDB.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "message: User registered successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body / Username and password are required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Could not register user (username may already exist)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -105,7 +256,7 @@ const docTemplate = `{
         },
         "/withdraw": {
             "post": {
-                "description": "Deduct a specified decimal amount from a users's balance if sufficient balance is available.",
+                "description": "Deduct a specified decimal amount from a user's balance if sufficient balance is available.",
                 "consumes": [
                     "application/json"
                 ],
@@ -123,7 +274,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TransactionRequest"
+                            "$ref": "#/definitions/internal.TransactionRequest"
                         }
                     }
                 ],
@@ -131,19 +282,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Withdrawal successfully processed",
                         "schema": {
-                            "$ref": "#/definitions/models.BalanceResponse"
+                            "$ref": "#/definitions/internal.BalanceResponse"
                         }
                     },
                     "400": {
                         "description": "Insufficient funds, missing player_id, or invalid amount",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Method not allowed",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/internal.ErrorResponse"
                         }
                     }
                 }
@@ -151,7 +302,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.BalanceResponse": {
+        "auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal.BalanceResponse": {
             "type": "object",
             "properties": {
                 "balance": {
@@ -165,7 +327,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErrorResponse": {
+        "internal.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -173,7 +335,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.TransactionRequest": {
+        "internal.TransactionRequest": {
             "type": "object",
             "properties": {
                 "amount": {
