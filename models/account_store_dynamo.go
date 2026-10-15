@@ -84,7 +84,6 @@ func (s *DynamoAccountStore) Deposit(ctx context.Context, userId string, amount 
 
 	output, err := s.client.UpdateItem(ctx, input)
 	if err != nil {
-		errors.Is(error)
 		return nil, fmt.Errorf("failed to execute atomic deposit: %w", err)
 	}
 
