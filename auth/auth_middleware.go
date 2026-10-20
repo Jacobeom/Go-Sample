@@ -10,6 +10,7 @@ import (
 
 // AuthMiddleware checks if the user is authenticated before allowing access to protected routes.
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Retrieve the auth_token cookie
 		cookie, err := r.Cookie("auth_token")
@@ -43,6 +44,7 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	if err != nil || !token.Valid {
 		return nil, errors.New("invalid or expired token")
 	}
+	//TODO: Implement sliding expiration logic if needed, e.g., refresh token mechanism.
 
 	return claims, nil
 }
