@@ -21,7 +21,6 @@ type AccountStore interface {
 // ==========================================
 
 type TransactionRequest struct {
-	UserId string          `json:"user_id"`
 	Amount decimal.Decimal `json:"amount"`
 }
 

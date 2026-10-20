@@ -3,6 +3,7 @@ module main
 go 1.27.1
 
 require (
+	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.3 // indirect

@@ -25,16 +25,6 @@ const docTemplate = `{
                     "balance"
                 ],
                 "summary": "Get user balance",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "player123",
-                        "description": "user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "User balance details",
@@ -340,9 +330,6 @@ const docTemplate = `{
             "properties": {
                 "amount": {
                     "type": "number"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
         }

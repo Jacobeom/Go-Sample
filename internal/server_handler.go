@@ -99,7 +99,6 @@ func (s *Server) HandleWithdraw(w http.ResponseWriter, r *http.Request) {
 // @Description  Fetch current balance for a given user_id query parameter.
 // @Tags         balance
 // @Produce      json
-// @Param        user_id query string true "user_id" example(player123)
 // @Success      200 {object} BalanceResponse "User balance details"
 // @Failure      400 {object} ErrorResponse "Missing player_id query parameter"
 // @Failure      405 {object} ErrorResponse "Method not allowed"

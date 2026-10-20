@@ -25,8 +25,6 @@ definitions:
     properties:
       amount:
         type: number
-      user_id:
-        type: string
     type: object
 host: localhost:8080
 info:
@@ -38,13 +36,6 @@ paths:
   /balance:
     get:
       description: Fetch current balance for a given user_id query parameter.
-      parameters:
-      - description: user_id
-        example: player123
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:

@@ -1,0 +1,8 @@
+[server]
+port = 8080
+host = "localhost"
+
+[awsconfig]
+wallet_table= "UserWallet"
+login_table= "Login"
+region = "eu-north-1"
