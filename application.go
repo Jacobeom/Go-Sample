@@ -38,6 +38,11 @@ type AWSConfig struct {
 // @host            localhost:8080
 // @BasePath        /
 
+func hello(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello, World!"))
+}
+
 func main() {
 	var appConfig Config
 	ctx := context.Background()
@@ -59,6 +64,8 @@ func main() {
 	server := internal.NewServer(store)
 	authService := auth.NewAuthService(dynamoClient, appConfig.Database.LoginTable)
 
+
+	http.HandleFunc("/", hello)
 	http.HandleFunc("/register", authService.RegisterLogin)
 	http.HandleFunc("/login", authService.Login)
 	http.HandleFunc("/logout", auth.AuthMiddleware(authService.Logout))
